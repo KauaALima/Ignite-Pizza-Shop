@@ -1,8 +1,10 @@
+import { useMutation } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import * as z from 'zod'
 
+import { singIn } from '@/api/sign-in'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,18 +17,32 @@ const signInForm = z.object({
 type SingInForm = z.infer<typeof signInForm>
 
 export function Signin() {
+  const [searchParams] = useSearchParams()
+
   const {
     register,
     handleSubmit,
     formState: { isSubmitting },
-  } = useForm<SingInForm>()
+  } = useForm<SingInForm>({
+    defaultValues: {
+      email: searchParams.get('email') ?? '',
+    },
+  })
 
-  function handleSignIn(data: SingInForm) {
-    console.log(data)
+  const { mutateAsync: authenticate } = useMutation({
+    mutationFn: singIn,
+  })
 
-    toast.success('Enviamos um link de autenticação para seu email', {
-      action: { label: 'Reenviar', onClick: () => handleSignIn },
-    })
+  async function handleSignIn(data: SingInForm) {
+    try {
+      await authenticate({ email: data.email })
+
+      toast.success('Enviamos um link de autenticação para seu email', {
+        action: { label: 'Reenviar', onClick: () => authenticate({ email }) },
+      })
+    } catch (err) {
+      toast.error('Credenciais invalidas')
+    }
   }
 
   return (

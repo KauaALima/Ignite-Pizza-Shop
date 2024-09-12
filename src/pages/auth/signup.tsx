@@ -1,8 +1,10 @@
+import { useMutation } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import * as z from 'zod'
 
+import { registerRestaurant } from '@/api/register'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -11,7 +13,7 @@ import { Label } from '@/components/ui/label'
 const signUpForm = z.object({
   restaurantName: z.string(),
   managerName: z.string(),
-  phone: z.number(),
+  phone: z.string(),
   email: z.string().email(),
 })
 
@@ -24,14 +26,30 @@ export function Signup() {
     formState: { isSubmitting },
   } = useForm<signUpForm>()
 
+  const { mutateAsync: registerRestaurantfn } = useMutation({
+    mutationFn: registerRestaurant,
+  })
+
   const navigate = useNavigate()
 
-  function handleSignUp(data: signUpForm) {
-    console.log(data)
+  async function handleSignUp(data: signUpForm) {
+    try {
+      await registerRestaurantfn({
+        restaurantName: data.restaurantName,
+        managerName: data.managerName,
+        email: data.email,
+        phone: data.phone,
+      })
 
-    toast.success('Restaurante cadastrado com sucesso', {
-      action: { label: 'Login', onClick: () => navigate('/sign-in') },
-    })
+      toast.success('Restaurante cadastrado com sucesso', {
+        action: {
+          label: 'Login',
+          onClick: () => navigate(`/sign-in?email=${data.email}`),
+        },
+      })
+    } catch (err) {
+      toast.error('Credenciais invalidas')
+    }
   }
 
   return (
